@@ -98,35 +98,19 @@ services:
       LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2}
       LANGCHAIN_PROJECT: "opea-reranking-service"
     restart: unless-stopped
-  tgi_service:
-    image: ghcr.io/huggingface/text-generation-inference:1.4
-    container_name: tgi-service
-    ports:
-      - "9009:80"
-    volumes:
-      - "$DATA:/data"
-    shm_size: 1g
-    environment:
-      http_proxy: ${http_proxy}
-      https_proxy: ${https_proxy}
-      HF_TOKEN: ${HUGGINGFACEHUB_API_TOKEN}
-    command: --model-id ${LLM_MODEL_ID}
   llm:
-    image: opea/llm-tgi:${tag}
-    container_name: llm-tgi-server
-    depends_on:
-      - tgi_service
+    image: opea/llm-vllm:${tag}
+    container_name: llm-vllm-server
     ports:
       - "9000:9000"
     ipc: host
     environment:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
-      TGI_LLM_ENDPOINT: ${TGI_LLM_ENDPOINT}
+      LLM_MODEL_ID: ${LLM_MODEL_ID}
+      VLLM_CPU_KVCACHE_SPACE: 40
+      VLLM_CPU_IPEX_DEBUG: 0
       HUGGINGFACEHUB_API_TOKEN: ${HUGGINGFACEHUB_API_TOKEN}
-      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
-      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2}
-      LANGCHAIN_PROJECT: "opea-llm-service"
     restart: unless-stopped
   chaqna-xeon-backend-server:
     image: opea/chatqna:${tag}
@@ -138,7 +122,6 @@ services:
       - retriever
       - tei-reranking-service
       - reranking
-      - tgi_service
       - llm
     ports:
       - "8888:8888"
